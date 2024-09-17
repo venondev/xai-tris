@@ -4,13 +4,16 @@
   "num_experiments": 1,
   "sample_size": 10000,
   "test_split": 0.2,
-  "image_shape": [8,8],
+  "image_shape": [8, 8],
   "image_scale": 1,
   "mean_data": 0,
   "var_data": 0.5,
-  "smoothing_sigma": 3,
+  "smoothing_sigma": 2,
   "manipulation": 1.0,
-  "positions": [[1,1],[4,5]],
+  "positions": [
+    [1, 1],
+    [4, 5]
+  ],
   "patterns": ["t", "l"],
   "use_imagenet": false,
   "parameterizations": {
@@ -18,25 +21,29 @@
       "scenario": "linear",
       "manipulation_type": "additive",
       "pattern_scales": [1],
-      "snrs": [[0.18],[0.0125],[]]
+      "correlated_additive_noise": 0.1,
+      "snrs": [[0.18], [0.0125], []]
     },
     "multiplicative": {
       "scenario": "multiplicative",
       "manipulation_type": "multiplicative",
       "pattern_scales": [1],
-      "snrs": [[0.7],[0.1],[]]
+      "correlated_additive_noise": 0.1,
+      "snrs": [[0.7], [0.1], []]
     },
     "translations_rotations": {
       "scenario": "translations_rotations",
       "manipulation_type": "additive",
       "pattern_scales": [1],
-      "snrs": [[0.65],[0.2],[]]
+      "correlated_additive_noise": 0.1,
+      "snrs": [[0.65], [0.2], []]
     },
     "xor": {
       "scenario": "xor",
       "manipulation_type": "additive",
       "pattern_scales": [1],
-      "snrs": [[0.35],[0.15],[]]
+      "correlated_additive_noise": 0.1,
+      "snrs": [[0.35], [0.15], []]
     }
   }
 }

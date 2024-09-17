@@ -28,12 +28,8 @@ from xai_master.scenarios.xai_tris.xai_tris_repo.data.data_utils import (
 from datetime import datetime
 from pathlib import Path
 
-import os
 import sys
 
-os.environ["PYTHONHASHSEED"] = str(SEED)
-random.seed(SEED)
-np.random.seed(SEED)
 
 scenario_dict = {
     "linear": generate_fixed,
@@ -78,6 +74,18 @@ def data_generation_process(config: Dict, output_dir: str):
                                 ),
                                 config["smoothing_sigma"],
                             ).reshape((image_shape[0] * image_shape[1]))
+
+                            if "correlated_additive_noise" in params:
+                                noise = np.random.normal(
+                                    config["mean_data"],
+                                    config["var_data"],
+                                    (image_shape[0], image_shape[1]),
+                                )
+                                copy_backgrounds[j] += (
+                                    noise.reshape((image_shape[0] * image_shape[1]))
+                                    * params["correlated_additive_noise"]
+                                )
+
                         alpha_ind = 1
                     elif correlated == "imagenet" and config["use_imagenet"]:
                         copy_backgrounds = imagenet_backgrounds.copy()
