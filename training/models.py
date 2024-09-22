@@ -1,7 +1,8 @@
-from torch.nn import Linear, ReLU, Sequential, Conv2d, MaxPool2d, Module, Dropout
-from torch import softmax
-from torch.nn.init import kaiming_normal_
 import torch
+from torch import softmax
+from torch.nn import (Conv2d, Dropout, Linear, MaxPool2d, Module, ReLU,
+                      Sequential)
+from torch.nn.init import kaiming_normal_
 
 
 class CNN(Module):
@@ -122,19 +123,32 @@ class CNN8by8(Module):
 
 
 class MLP8by8(Module):
-    def __init__(self, n_dim):
+    def __init__(self, n_dim, layers=None):
         super(MLP8by8, self).__init__()
         self.n_dim = n_dim
 
-        self.linear_layers = Sequential(
-            Linear(self.n_dim, int(self.n_dim / 2)),
-            ReLU(),
-            Linear(int(self.n_dim / 2), int(self.n_dim / 4)),
-            ReLU(),
-            Linear(int(self.n_dim / 4), int(self.n_dim / 8)),
-            ReLU(),
-            Linear(int(self.n_dim / 8), 2),
-        )
+        if layers == None:
+            self.linear_layers = Sequential(
+                Linear(self.n_dim, int(self.n_dim / 2)),
+                ReLU(),
+                Linear(int(self.n_dim / 2), int(self.n_dim / 4)),
+                ReLU(),
+                Linear(int(self.n_dim / 4), int(self.n_dim / 8)),
+                ReLU(),
+                Linear(int(self.n_dim / 8), 2),
+            )
+        else:
+            l = []
+            for idx, layer in enumerate(layers):
+                if idx == 0:
+                    l.append(Linear(self.n_dim, layer))
+                else:
+                    l.append(Linear(layers[idx - 1], layer))
+                l.append(ReLU())
+            
+            l.append(Linear(layers[-1], 2))
+            self.linear_layers = Sequential(*l)
+            
 
     # Defining the forward pass
     def forward(self, x):
@@ -166,3 +180,4 @@ models_dict = {
     "CNN8by8": CNN8by8,
     "MLP8by8": MLP8by8,
 }
+
