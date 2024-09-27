@@ -1,6 +1,6 @@
 import torch
 from torch import softmax
-from torch.nn import (Conv2d, Dropout, Linear, MaxPool2d, Module, ReLU,
+from torch.nn import (Conv2d, Dropout, Linear, MaxPool2d, Module, ReLU, LeakyReLU,
                       Sequential)
 from torch.nn.init import kaiming_normal_
 
@@ -101,6 +101,7 @@ class CNN8by8(Module):
         )
 
         self.linear_layers = Sequential(Linear(self.linear_dim, 2))
+        self.softmax = torch.nn.Softmax(dim=-1)
 
     # Defining the forward pass
     def forward(self, x):
@@ -110,7 +111,7 @@ class CNN8by8(Module):
         return x
 
     def get_layers(self):
-        return list(self.cnn_layers.children()) + list(self.linear_layers.children())
+        return list(self.cnn_layers.children()) + list(self.linear_layers.children()) + [self.softmax]
 
     def collect_activations(self, x):
         yield x, 0, "input"
@@ -145,6 +146,7 @@ class MLP8by8(Module):
                 else:
                     l.append(Linear(layers[idx - 1], layer))
                 l.append(ReLU())
+                l.append(torch.nn.BatchNorm1d(layer))
             
             l.append(Linear(layers[-1], 2))
             self.linear_layers = Sequential(*l)
@@ -152,11 +154,11 @@ class MLP8by8(Module):
 
     # Defining the forward pass
     def forward(self, x):
-        x = softmax(self.linear_layers(x), dim=1)
+        x = self.linear_layers(x)
         return x
 
     def get_layers(self):
-        return list(self.linear_layers.children())
+        return list(self.linear_layers.children()) + [torch.nn.Softmax(dim=-1)]
 
     def collect_activations(self, x):
         yield x, 0, "input"
