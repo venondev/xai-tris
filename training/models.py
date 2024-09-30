@@ -1,7 +1,15 @@
 import torch
 from torch import softmax
-from torch.nn import (Conv2d, Dropout, Linear, MaxPool2d, Module, ReLU, LeakyReLU,
-                      Sequential)
+from torch.nn import (
+    Conv2d,
+    Dropout,
+    Linear,
+    MaxPool2d,
+    Module,
+    ReLU,
+    LeakyReLU,
+    Sequential,
+)
 from torch.nn.init import kaiming_normal_
 
 
@@ -111,7 +119,11 @@ class CNN8by8(Module):
         return x
 
     def get_layers(self):
-        return list(self.cnn_layers.children()) + list(self.linear_layers.children()) + [self.softmax]
+        return (
+            list(self.cnn_layers.children())
+            + list(self.linear_layers.children())
+            + [self.softmax]
+        )
 
     def collect_activations(self, x):
         yield x, 0, "input"
@@ -128,7 +140,7 @@ class MLP8by8(Module):
         super(MLP8by8, self).__init__()
         self.n_dim = n_dim
 
-        if layers == None:
+        if layers is None:
             self.linear_layers = Sequential(
                 Linear(self.n_dim, int(self.n_dim / 2)),
                 ReLU(),
@@ -147,10 +159,9 @@ class MLP8by8(Module):
                     l.append(Linear(layers[idx - 1], layer))
                 l.append(ReLU())
                 l.append(torch.nn.BatchNorm1d(layer))
-            
+
             l.append(Linear(layers[-1], 2))
             self.linear_layers = Sequential(*l)
-            
 
     # Defining the forward pass
     def forward(self, x):
@@ -182,4 +193,3 @@ models_dict = {
     "CNN8by8": CNN8by8,
     "MLP8by8": MLP8by8,
 }
-
