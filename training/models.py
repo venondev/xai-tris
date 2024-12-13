@@ -181,6 +181,53 @@ class MLP8by8(Module):
                 yield cur, idx + 1, str(layer)
 
 
+class MLP8by8ForBCE(Module):
+    def __init__(self, n_dim, layers=None):
+        super(MLP8by8ForBCE, self).__init__()
+        self.n_dim = n_dim
+
+        if layers is None:
+            self.linear_layers = Sequential(
+                Linear(self.n_dim, int(self.n_dim / 2)),
+                ReLU(),
+                Linear(int(self.n_dim / 2), int(self.n_dim / 4)),
+                ReLU(),
+                Linear(int(self.n_dim / 4), int(self.n_dim / 8)),
+                ReLU(),
+                Linear(int(self.n_dim / 8), 1),
+                torch.nn.Sigmoid(),
+            )
+        else:
+            l = []
+            for idx, layer in enumerate(layers):
+                if idx == 0:
+                    l.append(Linear(self.n_dim, layer))
+                else:
+                    l.append(Linear(layers[idx - 1], layer))
+                l.append(ReLU())
+
+            l.append(Linear(layers[-1], 1))
+            l.append(torch.nn.Sigmoid())
+            self.linear_layers = Sequential(*l)
+
+    # Defining the forward pass
+    def forward(self, x):
+        x = self.linear_layers(x)
+        return x
+
+    def get_layers(self):
+        return list(self.linear_layers.children())
+
+    def collect_activations(self, x):
+        yield x, 0, "input"
+        layers = self.get_layers()
+        cur = x
+        with torch.no_grad():
+            for idx, layer in enumerate(layers):
+                cur = layer(cur)
+                yield cur, idx + 1, str(layer)
+
+
 def init_he_normal(layer):
     if isinstance(layer, Conv2d) or isinstance(layer, Linear):
         kaiming_normal_(layer.weight)
