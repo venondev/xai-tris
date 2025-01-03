@@ -1,6 +1,7 @@
 import torch
 from torch import softmax
 from torch.nn import (
+    ModuleList,
     Conv2d,
     Dropout,
     Linear,
@@ -139,6 +140,7 @@ class MLP8by8(Module):
     def __init__(self, n_dim, layers=None):
         super(MLP8by8, self).__init__()
         self.n_dim = n_dim
+        self.early_exit = False
 
         if layers is None:
             self.linear_layers = Sequential(
@@ -181,34 +183,34 @@ class MLP8by8(Module):
                 yield cur, idx + 1, str(layer)
 
 
+class LinearWithClassifier(Module):
+    def __init__(self, *args, **kwargs):
+        super(LinearWithClassifier, self).__init__()
+
+        self.input_dim = args[0]
+        self.classifier = Linear(self.input_dim, 1)
+        self.linear = Linear(*args)
+
+    def forward(self, x):
+        return self.linear(x)
+
+
 class MLP8by8ForBCE(Module):
     def __init__(self, n_dim, layers=None):
         super(MLP8by8ForBCE, self).__init__()
         self.n_dim = n_dim
+        self.early_exit = True
 
-        if layers is None:
-            self.linear_layers = Sequential(
-                Linear(self.n_dim, int(self.n_dim / 2)),
-                ReLU(),
-                Linear(int(self.n_dim / 2), int(self.n_dim / 4)),
-                ReLU(),
-                Linear(int(self.n_dim / 4), int(self.n_dim / 8)),
-                ReLU(),
-                Linear(int(self.n_dim / 8), 1),
-                torch.nn.Sigmoid(),
-            )
-        else:
-            l = []
-            for idx, layer in enumerate(layers):
-                if idx == 0:
-                    l.append(Linear(self.n_dim, layer))
-                else:
-                    l.append(Linear(layers[idx - 1], layer))
-                l.append(ReLU())
+        l = []
+        layers = layers + [1]
+        for idx, layer in enumerate(layers):
+            if idx == 0:
+                l.append(LinearWithClassifier(self.n_dim, layer))
+            else:
+                l.append(LinearWithClassifier(layers[idx - 1], layer))
+            l.append(ReLU())
 
-            l.append(Linear(layers[-1], 1))
-            l.append(torch.nn.Sigmoid())
-            self.linear_layers = Sequential(*l)
+        self.linear_layers = Sequential(*l)
 
     # Defining the forward pass
     def forward(self, x):
@@ -224,8 +226,12 @@ class MLP8by8ForBCE(Module):
         cur = x
         with torch.no_grad():
             for idx, layer in enumerate(layers):
+                classification = None
+                if isinstance(layer, LinearWithClassifier):
+                    classification = layer.classifier(cur)
+
                 cur = layer(cur)
-                yield cur, idx + 1, str(layer)
+                yield cur, classification, idx, "classifier"
 
 
 def init_he_normal(layer):

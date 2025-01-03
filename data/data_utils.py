@@ -5,6 +5,7 @@ import random
 from PIL import Image
 from scipy.ndimage import gaussian_filter
 from xai_master.scenarios.xai_tris.xai_tris_repo.common import SEED
+from matplotlib import pyplot as plt
 
 np.random.seed(SEED)
 
@@ -49,16 +50,97 @@ def scale_to_bound(row, scale):
     return row * scale
 
 
+from scipy.ndimage import gaussian_filter1d
+
+
+def apply_gaussian_filter_no_padding(image, sigma):
+    """
+    Apply a Gaussian filter to an image without padding.
+    Out-of-bound pixels are excluded, and the filter is normalized at edges.
+    """
+    # Create the 2D Gaussian kernel
+    size = int(2 * np.ceil(3 * sigma) + 1)  # Kernel size based on sigma
+    x = np.arange(-size // 2 + 1, size // 2 + 1)
+    gaussian_kernel = np.exp(-0.5 * (x / sigma) ** 2)
+    gaussian_kernel = gaussian_kernel / gaussian_kernel.sum()
+
+    # Prepare the output array
+    filtered_image = np.zeros_like(image)
+
+    # Iterate over each pixel
+    for i in range(image.shape[0]):
+        for j in range(image.shape[1]):
+            # Determine the bounds of the region for the kernel
+            x_min = max(0, i - size // 2)
+            x_max = min(image.shape[0], i + size // 2 + 1)
+            y_min = max(0, j - size // 2)
+            y_max = min(image.shape[1], j + size // 2 + 1)
+
+            # Extract the region of interest
+            region = image[x_min:x_max, y_min:y_max]
+
+            # Adjust the kernel to match the region size
+            x_kernel_start = max(0, size // 2 - i)
+            x_kernel_end = x_kernel_start + (x_max - x_min)
+            y_kernel_start = max(0, size // 2 - j)
+            y_kernel_end = y_kernel_start + (y_max - y_min)
+
+            adjusted_kernel = gaussian_kernel[x_kernel_start:x_kernel_end].reshape(
+                -1, 1
+            ) * gaussian_kernel[y_kernel_start:y_kernel_end].reshape(1, -1)
+
+            # Normalize the kernel for the current region
+            adjusted_kernel /= adjusted_kernel.sum()
+
+            # Apply the filter
+            filtered_image[i, j] = np.sum(region * adjusted_kernel)
+
+    return filtered_image
+
+
 def generate_backgrounds(
-    sample_size: int, mean_data: int, var_data: float, image_shape: list = [8, 8]
+    sample_size: int,
+    mean_data: int,
+    var_data: float,
+    image_shape: list = [8, 8],
+    smoothing_sigma: float = 1,
 ) -> np.array:
-    backgrounds = np.zeros((sample_size, image_shape[0] * image_shape[1]))
-
+    backgrounds_raw = np.random.normal(
+        mean_data, var_data, size=(sample_size, image_shape[0], image_shape[1])
+    )
+    backgrounds_corr_old = np.zeros_like(backgrounds_raw)
     for i in range(sample_size):
-        samples = np.random.normal(mean_data, var_data, size=image_shape)
-        backgrounds[i] = np.reshape(samples, (image_shape[0] * image_shape[1]))
+        backgrounds_corr_old[i] = gaussian_filter(
+            backgrounds_raw[i].copy(), smoothing_sigma, mode="constant"
+        )
 
-    return backgrounds
+    backgrounds_corr_new = np.zeros_like(backgrounds_raw)
+    for i in range(sample_size):
+        backgrounds_corr_new[i] = apply_gaussian_filter_no_padding(
+            backgrounds_raw[i].copy(), smoothing_sigma
+        )
+
+    return (
+        backgrounds_raw.reshape((sample_size, image_shape[0] * image_shape[1])),
+        backgrounds_corr_old.reshape((sample_size, image_shape[0] * image_shape[1])),
+        # backgrounds_corr_new.reshape((sample_size, image_shape[0] * image_shape[1])),
+    )
+
+    # cut_out_x, cut_out_y = image_shape[0] // 2, image_shape[1] // 2
+    # backgrounds = backgrounds_raw[
+    #     :,
+    #     cut_out_x : cut_out_x + image_shape[0],
+    #     cut_out_y : cut_out_y + image_shape[1],
+    # ].reshape((sample_size, image_shape[0] * image_shape[1]))
+
+    # backgrounds_corr_raw = gaussian_filter(backgrounds_raw, smoothing_sigma)
+    # backgrounds_corr = backgrounds_corr_raw[
+    #     :,
+    #     cut_out_x : cut_out_x + image_shape[0],
+    #     cut_out_y : cut_out_y + image_shape[1],
+    # ].reshape((sample_size, image_shape[0] * image_shape[1]))
+
+    return backgrounds, backgrounds_corr
 
 
 def generate_imagenet(sample_size: int) -> np.array:
@@ -182,9 +264,9 @@ def generate_xor(params: Dict, image_shape: list) -> np.array:
 
     manips = [
         [1, 1],
-        [-1, -1],
-        [1, -1],
-        [-1, 1],
+        [0, 0],
+        [1, 0],
+        [0, 1],
     ]
 
     k = 0

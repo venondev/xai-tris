@@ -43,9 +43,14 @@ def data_generation_process(config: Dict, output_dir: str):
     # experiment_list = []
     image_shape = np.array(config["image_shape"]) * config["image_scale"]
     for i in range(config["num_experiments"]):  # generate multiple datasets if desired
-        backgrounds = generate_backgrounds(
-            config["sample_size"], config["mean_data"], config["var_data"], image_shape
+        backgrounds, backgrounds_corr = generate_backgrounds(
+            config["sample_size"],
+            config["mean_data"],
+            config["var_data"],
+            image_shape,
+            config["smoothing_sigma"],
         )
+
         if config["use_imagenet"]:
             imagenet_backgrounds = generate_imagenet(config["sample_size"])
 
@@ -68,12 +73,7 @@ def data_generation_process(config: Dict, output_dir: str):
                     params["correlated_background"] = correlated
                     if correlated == "correlated":
                         for j, background in enumerate(backgrounds.copy()):
-                            copy_backgrounds[j] = gaussian_filter(
-                                np.reshape(
-                                    background, (image_shape[0], image_shape[1])
-                                ),
-                                config["smoothing_sigma"],
-                            ).reshape((image_shape[0] * image_shape[1]))
+                            copy_backgrounds[j] = backgrounds_corr[j].copy()
 
                             if "correlated_additive_noise" in params:
                                 noise = np.random.normal(
@@ -168,7 +168,7 @@ def data_generation_process(config: Dict, output_dir: str):
 
                         scenario_key = f'{params["scenario"]}_{config["image_scale"]}d{config["pattern_scale"]}p_{alpha}_{correlated_string}'
 
-                        scenario = {
+                        out = {
                             "key": scenario_key,
                             "x_train": x_train,
                             "y_train": y_train,
@@ -176,13 +176,13 @@ def data_generation_process(config: Dict, output_dir: str):
                             "y_val": y_val,
                             "x_test": x_test,
                             "y_test": y_test,
-                            "masks_train": masks_train,
-                            "masks_val": masks_val,
-                            "masks_test": masks_test,
+                            "masks_train": torch.from_numpy(masks_train),
+                            "masks_val": torch.from_numpy(masks_val),
+                            "masks_test": torch.from_numpy(masks_test),
                         }
 
                         # Save as torch dict
-                        torch.save(scenario, f"{output_dir}/{scenario_key}.pt")
+                        torch.save(out, f"{output_dir}/{scenario_key}.pt")
 
 
 def main():
