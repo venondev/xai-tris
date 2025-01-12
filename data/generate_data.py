@@ -6,16 +6,16 @@ import random
 from scipy.ndimage import gaussian_filter
 from sklearn.model_selection import StratifiedShuffleSplit
 
-from xai_master.scenarios.xai_tris.xai_tris_repo.common import (
+from xai_tris_small.repo.common import (
     DataRecord,
     DataScenarios,
     SEED,
 )
-from xai_master.scenarios.xai_tris.xai_tris_repo.utils import (
+from xai_tris_small.repo.utils import (
     load_json_file,
     dump_as_pickle,
 )
-from xai_master.scenarios.xai_tris.xai_tris_repo.data.data_utils import (
+from xai_tris_small.repo.data.data_utils import (
     generate_backgrounds,
     generate_imagenet,
     generate_fixed,

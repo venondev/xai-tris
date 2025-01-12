@@ -4,7 +4,7 @@ from glob import glob
 import random
 from PIL import Image
 from scipy.ndimage import gaussian_filter
-from xai_master.scenarios.xai_tris.xai_tris_repo.common import SEED
+from xai_tris_small.repo.common import SEED
 
 np.random.seed(SEED)
 
