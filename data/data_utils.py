@@ -111,7 +111,7 @@ def generate_backgrounds(
     backgrounds_corr_old = np.zeros_like(backgrounds_raw)
     for i in range(sample_size):
         backgrounds_corr_old[i] = gaussian_filter(
-            backgrounds_raw[i].copy(), smoothing_sigma, mode="constant"
+            backgrounds_raw[i].copy(), smoothing_sigma
         )
 
     backgrounds_corr_new = np.zeros_like(backgrounds_raw)

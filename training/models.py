@@ -202,13 +202,15 @@ class MLP8by8ForBCE(Module):
         self.early_exit = True
 
         l = []
-        layers = layers + [1]
+        layers = layers
         for idx, layer in enumerate(layers):
             if idx == 0:
                 l.append(LinearWithClassifier(self.n_dim, layer))
             else:
                 l.append(LinearWithClassifier(layers[idx - 1], layer))
             l.append(ReLU())
+
+        l.append(LinearWithClassifier(layers[-1], 1))
 
         self.linear_layers = Sequential(*l)
 
@@ -221,7 +223,7 @@ class MLP8by8ForBCE(Module):
         return list(self.linear_layers.children())
 
     def collect_activations(self, x):
-        yield x, 0, "input"
+        yield x, None, 0, "input"
         layers = self.get_layers()
         cur = x
         with torch.no_grad():

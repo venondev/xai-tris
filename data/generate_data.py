@@ -2,6 +2,7 @@ from typing import List, Dict
 
 import numpy as np
 import torch
+import os
 import random
 from scipy.ndimage import gaussian_filter
 from sklearn.model_selection import StratifiedShuffleSplit
@@ -199,4 +200,12 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    config_path = "/data/Uni/master/data/generated/xai_tris_small_bce/15a13f3ef04dd6d3155f1a96acc88ce4/config.json"
+    out_path = "/data/Uni/master/data/generated/xai_tris_small_bce/30k_samples"
+    os.makedirs(out_path, exist_ok=True)
+
+    config = load_json_file(config_path)
+
+    data_generation_process(config=config, output_dir=out_path)
+
+    # main()
