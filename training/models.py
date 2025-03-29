@@ -9,6 +9,7 @@ from torch.nn import (
     ReLU,
     LeakyReLU,
     Sequential,
+    SiLU,
 )
 from torch.nn.init import kaiming_normal_
 
@@ -189,11 +190,11 @@ class MLP8by8ForBCE(Module):
         if layers is None:
             self.linear_layers = Sequential(
                 Linear(self.n_dim, int(self.n_dim / 2)),
-                ReLU(),
+                SiLU(),
                 Linear(int(self.n_dim / 2), int(self.n_dim / 4)),
-                ReLU(),
+                SiLU(),
                 Linear(int(self.n_dim / 4), int(self.n_dim / 8)),
-                ReLU(),
+                SiLU(),
                 Linear(int(self.n_dim / 8), 1),
                 torch.nn.Sigmoid(),
             )
@@ -204,7 +205,8 @@ class MLP8by8ForBCE(Module):
                     l.append(Linear(self.n_dim, layer))
                 else:
                     l.append(Linear(layers[idx - 1], layer))
-                l.append(ReLU())
+                l.append(SiLU())
+                l.append(torch.nn.BatchNorm1d(layer))
 
             l.append(Linear(layers[-1], 1))
             l.append(torch.nn.Sigmoid())
@@ -217,6 +219,16 @@ class MLP8by8ForBCE(Module):
 
     def get_layers(self):
         return list(self.linear_layers.children())
+
+    def collect_activation_at(self, x, layer_idx):
+        layers = self.get_layers()
+        cur = x
+        with torch.no_grad():
+            for idx, layer in enumerate(layers):
+                cur = layer(cur)
+                if idx == layer_idx:
+                    return cur
+        return None
 
     def collect_activations(self, x):
         yield x, 0, "input"
