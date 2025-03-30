@@ -183,7 +183,13 @@ class MLP8by8(Module):
 
 
 class MLP8by8ForBCE(Module):
-    def __init__(self, n_dim, layers=None):
+    def __init__(
+        self,
+        n_dim,
+        activation_fn,
+        layers=None,
+        bn=False,
+    ):
         super(MLP8by8ForBCE, self).__init__()
         self.n_dim = n_dim
 
@@ -205,8 +211,9 @@ class MLP8by8ForBCE(Module):
                     l.append(Linear(self.n_dim, layer))
                 else:
                     l.append(Linear(layers[idx - 1], layer))
-                l.append(SiLU())
-                l.append(torch.nn.BatchNorm1d(layer))
+                if bn:
+                    l.append(torch.nn.BatchNorm1d(layer))
+                l.append(activation_fn)
 
             l.append(Linear(layers[-1], 1))
             l.append(torch.nn.Sigmoid())
