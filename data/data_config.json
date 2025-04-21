@@ -14,9 +14,21 @@
       "image_shape": [8, 8],
       "image_scale": 1,
       "smoothing_sigma": 3,
-      "positions": [[1, 1], [4, 5]],
-      "distractor_positions": [[[1, 1], [4, 1]], [[1, 5], [4, 5]]],
-      "use_imagenet": true,
+      "positions": [
+        [1, 1],
+        [4, 5]
+      ],
+      "distractor_positions": [
+        [
+          [1, 1],
+          [4, 1]
+        ],
+        [
+          [1, 5],
+          [4, 5]
+        ]
+      ],
+      "use_imagenet": false,
       "parameterizations": {
         "linear": {
           "pattern_scales": [1],
@@ -29,12 +41,12 @@
             "distractor_additive": {
               "white": [[0.15, 0.425, 0.425]],
               "correlated": [[0.05, 0.475, 0.475]],
-              "imagenet": [[0.10, 0.45, 0.45]]
+              "imagenet": [[0.1, 0.45, 0.45]]
             },
             "distractor_division": {
               "white": [[0.55, 0.225, 0.225]],
               "correlated": [[0.35, 0.325, 0.325]],
-              "imagenet": [[0.40, 0.3, 0.3]]
+              "imagenet": [[0.4, 0.3, 0.3]]
             }
           }
         },
@@ -49,7 +61,7 @@
             "distractor_multiplicative": {
               "white": [[0.45, 0.275, 0.275]],
               "correlated": [[0.25, 0.375, 0.375]],
-              "imagenet": [[0.40, 0.3, 0.3]]
+              "imagenet": [[0.4, 0.3, 0.3]]
             },
             "division": {
               "white": [0.55],
@@ -98,8 +110,8 @@
             },
             "distractor_additive": {
               "white": [[0.25, 0.375, 0.375]],
-              "correlated": [[0.30, 0.35, 0.35]],
-              "imagenet": [[0.30, 0.35, 0.35]]
+              "correlated": [[0.3, 0.35, 0.35]],
+              "imagenet": [[0.3, 0.35, 0.35]]
             },
             "division": {
               "white": [0.8],
@@ -119,7 +131,7 @@
             "distractor_multiplicative": {
               "white": [[0.45, 0.275, 0.275]],
               "correlated": [[0.25, 0.375, 0.375]],
-              "imagenet": [[0.40, 0.3, 0.3]]
+              "imagenet": [[0.4, 0.3, 0.3]]
             }
           }
         }
@@ -129,8 +141,20 @@
       "image_shape": [8, 8],
       "image_scale": 8,
       "smoothing_sigma": 10,
-      "positions": [[8, 8], [32, 40]],
-      "distractor_positions": [[[8, 8], [32, 8]], [[8, 40], [32, 40]]],
+      "positions": [
+        [8, 8],
+        [32, 40]
+      ],
+      "distractor_positions": [
+        [
+          [8, 8],
+          [32, 8]
+        ],
+        [
+          [8, 40],
+          [32, 40]
+        ]
+      ],
       "use_imagenet": true,
       "parameterizations": {
         "linear": {
