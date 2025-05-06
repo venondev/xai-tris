@@ -25,9 +25,12 @@ from xai_master.scenarios.xai_tris.xai_tris_repo.data.data_utils import (
     scale_to_bound,
 )
 
-os.environ["PYTHONHASHSEED"] = str(SEED)
-random.seed(SEED)
-np.random.seed(SEED)
+
+def seed_everything(seed: int = 42):
+    os.environ["PYTHONHASHSEED"] = str(seed)
+    random.seed(seed)
+    np.random.seed(seed)
+
 
 data_generators = {
     "linear": generate_fixed,
@@ -131,13 +134,14 @@ def combine_inputs(signal, background, manipulation_type, alpha, distractor=None
         raise ValueError(f"Unknown manipulation type: {manipulation_type}")
 
 
-def data_generation_process(config: Dict, output_dir: str):
+def data_generation_process(config: Dict, output_dir: str, seed: int = 42):
     image_shape = (
         (np.array(config["image_shape"]) * config["image_scale"]).astype(int).tolist()
     )
     base_shape = tuple(image_shape)
 
     for _ in range(config["num_experiments"]):
+        seed_everything(seed)
         base_backgrounds = generate_backgrounds(
             config["sample_size"], config["mean_data"], config["var_data"], image_shape
         )
@@ -150,6 +154,8 @@ def data_generation_process(config: Dict, output_dir: str):
         for param_name, params in config["parameterizations"].items():
             for pattern_scale in params["pattern_scales"]:
                 config["pattern_scale"] = pattern_scale
+                # Seed again for same patterns at same positions
+                seed_everything(seed)
                 patterns = data_generators[param_name](
                     params=config, image_shape=image_shape
                 )
@@ -233,7 +239,7 @@ def data_generation_process(config: Dict, output_dir: str):
                             sss = StratifiedShuffleSplit(
                                 n_splits=1,
                                 test_size=config["test_split"],
-                                random_state=SEED,
+                                random_state=seed,
                             )
                             train_idx, val_test_idx = next(sss.split(x, y))
 
@@ -241,7 +247,7 @@ def data_generation_process(config: Dict, output_dir: str):
                             masks_train = ground_truths[train_idx]
 
                             sss2 = StratifiedShuffleSplit(
-                                n_splits=1, test_size=0.5, random_state=SEED
+                                n_splits=1, test_size=0.5, random_state=seed
                             )
                             val_idx, test_idx = next(
                                 sss2.split(x[val_test_idx], y[val_test_idx])
@@ -272,7 +278,8 @@ def data_generation_process(config: Dict, output_dir: str):
                             #     if manip_type == 'distractor_division':
                             #         manip_str = 'distractor_division'
 
-                            scenario_key = f"{param_name}_{manip_str}_{config['image_scale']}d{pattern_scale}p_{alpha_str}_{bg_type}"
+                            scenario_key = f"{param_name}_{manip_str}_{bg_type}"
+                            # E.G. "linear_additive_white"
                             s = {
                                 "key": scenario_key,
                                 "x_train": x_train,
@@ -327,7 +334,7 @@ def main():
     )
     Path(output_path).mkdir(parents=True, exist_ok=True)
 
-    data_generation_process(config, output_path)
+    data_generation_process(config, output_path, seed=SEED)
 
 
 if __name__ == "__main__":
