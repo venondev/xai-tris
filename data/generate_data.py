@@ -159,7 +159,10 @@ def data_generation_process(config: Dict, output_dir: str, seed: int = 42):
                 patterns = data_generators[param_name](
                     params=config, image_shape=image_shape
                 )
-                ground_truths = patterns.copy()
+                if isinstance(patterns, tuple):
+                    patterns, ground_truths = patterns
+                else:
+                    ground_truths = patterns.copy()
 
                 distractors = generate_two_distractors(
                     config, image_shape=image_shape, N=config["sample_size"]

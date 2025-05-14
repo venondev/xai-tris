@@ -126,18 +126,28 @@ def generate_fixed(params: Dict, image_shape: List[int]) -> np.ndarray:
 def generate_translations_rotations(params: Dict, image_shape: List[int]) -> np.ndarray:
     N = params["sample_size"]
     out = np.zeros((N, image_shape[0], image_shape[1]))
+    gt = np.zeros((N, image_shape[0], image_shape[1]))
     patterns = get_patterns(params)
     idx = 0
     for pat in patterns:
         for _ in range(N // len(patterns)):
-            p = np.rot90(pat, k=np.random.randint(4))
+            rot = np.random.randint(4)
+            p = np.rot90(pat, k=rot)
             y = np.random.randint(0, image_shape[0] - p.shape[0] + 1)
             x = np.random.randint(0, image_shape[1] - p.shape[1] + 1)
             out[idx][y : y + p.shape[0], x : x + p.shape[1]] = p
+
+            # Generate ground truth
+            for pat in patterns:
+                p = np.rot90(pat, k=rot)
+                gt[idx][y : y + p.shape[0], x : x + p.shape[1]] += p
+            gt[idx] = np.clip(gt[idx], 0, 1)
+
             if params["pattern_scale"] > 3:
                 out[idx] = gaussian_filter(out[idx], 1.5)
+                gt[idx] = gaussian_filter(gt[idx], 1.5)
             idx += 1
-    return out.reshape(N, -1)
+    return out.reshape(N, -1), gt.reshape(N, -1)
 
 
 def generate_xor(params: Dict, image_shape: List[int]) -> np.ndarray:
