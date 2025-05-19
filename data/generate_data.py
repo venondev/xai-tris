@@ -20,7 +20,7 @@ from xai_master.scenarios.xai_tris.xai_tris_repo.data.data_utils import (
     generate_fixed,
     generate_translations_rotations,
     generate_xor,
-    generate_two_distractors,
+    generate_distractors,
     normalise_data,
     scale_to_bound,
 )
@@ -164,7 +164,7 @@ def data_generation_process(config: Dict, output_dir: str, seed: int = 42):
                 else:
                     ground_truths = patterns.copy()
 
-                distractors = generate_two_distractors(
+                distractors = generate_distractors(
                     config, image_shape=image_shape, N=config["sample_size"]
                 )
 
