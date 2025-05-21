@@ -29,19 +29,6 @@ def get_patterns(params: Dict) -> List[np.ndarray]:
     return [pattern_dict[p] for p in params["patterns"]]
 
 
-def get_distractors(params: Dict) -> List[np.ndarray]:
-    manip = params["manipulation"]
-    scale = params["pattern_scale"]
-
-    sq = np.array([[manip, manip], [manip, manip]])
-
-    # pattern_dict = {
-    #     'sq': np.kron(sq, np.ones((scale, scale))),
-    # }
-
-    return np.kron(sq, np.ones((scale, scale)))
-
-
 def normalise_data(
     signal: np.ndarray, background: np.ndarray, distractor: np.ndarray = None
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
@@ -183,7 +170,22 @@ def generate_xor(params: Dict, image_shape: List[int]) -> np.ndarray:
     return out.reshape(N, -1)
 
 
-def generate_distractors(params: Dict, image_shape: List[int], N: int) -> np.ndarray:
+def get_distractors(params: Dict) -> List[np.ndarray]:
+    manip = params["manipulation"]
+    scale = params["pattern_scale"]
+
+    sq = np.array([[manip, manip], [manip, manip], [manip, manip]])
+
+    # pattern_dict = {
+    #     'sq': np.kron(sq, np.ones((scale, scale))),
+    # }
+
+    return np.kron(sq, np.ones((scale, scale)))
+
+
+def generate_distractors_old(
+    params: Dict, image_shape: List[int], N: int
+) -> np.ndarray:
     patterns = np.zeros((N, image_shape[0], image_shape[1]))
     pat = get_distractors(params)
     signs = [-1, 1]
@@ -196,6 +198,32 @@ def generate_distractors(params: Dict, image_shape: List[int], N: int) -> np.nda
             patterns[j][
                 pos[0] : pos[0] + pat.shape[0], pos[1] : pos[1] + pat.shape[1]
             ] = pat * rand_signs[i]
+
+        # pat1, pat2 = chosen[inds[0]], chosen[inds[1]]
+        # pos1, pos2 = poses[0], poses[1]
+        # poses = params['distractor_positions'][np.random.choice([0, 1])]
+        # patterns[j][pos1[0]:pos1[0]+pat1.shape[0], pos1[1]:pos1[1]+pat1.shape[1]] = pat1 * rand_signs[0]
+        # patterns[j][pos2[0]:pos2[0]+pat2.shape[0], pos2[1]:pos2[1]+pat2.shape[1]] = pat2 * rand_signs[1]
+
+        if params["pattern_scale"] > 3:
+            patterns[j] = gaussian_filter(patterns[j], 1.5)
+
+    return patterns.reshape(N, -1)
+
+
+def generate_distractors(params: Dict, image_shape: List[int], N: int) -> np.ndarray:
+    patterns = np.zeros((N, image_shape[0], image_shape[1]))
+    pat = get_distractors(params)
+    signs = [-1, 1]
+
+    for j in range(N):
+        inds = np.random.randint(0, 2, 1)[0]
+        poses = params["distractor_positions"][inds]
+        rand_sign = np.random.choice(signs, 1)
+        for i, pos in enumerate(poses):
+            patterns[j][
+                pos[0] : pos[0] + pat.shape[0], pos[1] : pos[1] + pat.shape[1]
+            ] = pat * (rand_sign * (-1 if i == 0 else 1))
 
         # pat1, pat2 = chosen[inds[0]], chosen[inds[1]]
         # pos1, pos2 = poses[0], poses[1]
