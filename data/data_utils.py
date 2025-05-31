@@ -134,8 +134,8 @@ def generate_translations_rotations(params: Dict, image_shape: List[int]) -> np.
             out[idx][y : y + p.shape[0], x : x + p.shape[1]] = p
 
             # Generate ground truth
-            for pat in patterns:
-                p = np.rot90(pat, k=rot)
+            for pat_gt in patterns:
+                p = np.rot90(pat_gt, k=rot)
                 gt[idx][y : y + p.shape[0], x : x + p.shape[1]] += p
             gt[idx] = np.clip(gt[idx], 0, 1)
 
