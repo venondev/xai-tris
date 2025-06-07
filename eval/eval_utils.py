@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 from scipy.spatial.distance import cdist
 from scipy.ndimage import gaussian_filter
@@ -44,31 +45,79 @@ combined_mask_binary[combined_mask_smoothed >= 0.05] = 1
 combined_mask_binary[combined_mask_smoothed < 0.05] = 0
 
 
-def create_cost_matrix(edge_length=64):
+def create_cost_matrix(edge_length=64, false_negative_invariant=False):
     mat = np.indices((edge_length, edge_length))
     coords = []
     for i in range(edge_length):
         for j in range(edge_length):
             coords.append((mat[0][i][j], mat[1][i][j]))
     coords = np.array(coords)
-    return cdist(coords, coords)
+    dist = cdist(coords, coords)
+
+    if false_negative_invariant:
+        gt = combined_mask if edge_length == 8 else combined_mask_binary
+        indices = np.where(gt.flatten() == 1)[0]
+
+        for i in indices:
+            for j in indices:
+                dist[i, j] = 0
+
+    return dist
 
 
 cost_matrix_64by64 = create_cost_matrix(64)
 cost_matrix_8by8 = create_cost_matrix(8)
+cost_matrix_64by64_FNI = create_cost_matrix(64, false_negative_invariant=True)
+cost_matrix_8by8_FNI = create_cost_matrix(8, false_negative_invariant=True)
 
 
 # Scale matrix to sum to 1
 def sum_to_1(mat):
+    assert np.sum(mat) != 0, "Matrix cannot be all zeros"
     return mat / np.sum(mat)
 
 
 # Calculate EMD for full, continuous-valued, attribution
 # score = 1-(EMD/Dmax), where Dmax = max euclidean distance, aka sqrt(7^2 + 7^2)=9.8995 for the 8x8 data
 def continuous_emd(gt_mask, attribution, n_dim=64):
+    if isinstance(gt_mask, torch.Tensor):
+        gt_mask = gt_mask.detach().cpu().numpy()
+    if isinstance(attribution, torch.Tensor):
+        attribution = attribution.detach().cpu().numpy()
+
     cost_matrix = cost_matrix_64by64
     if n_dim == 64:
         cost_matrix = cost_matrix_8by8
+
+    if np.abs(attribution).sum() == 0:
+        return 0.0
+
+    try:
+        _, log = emd(
+            sum_to_1(gt_mask.reshape(n_dim)).astype(np.float64),
+            sum_to_1(np.abs(attribution).reshape(n_dim)).astype(np.float64),
+            cost_matrix,
+            numItermax=200000,
+            log=True,
+        )
+    except Exception as e:
+        print(gt_mask, attribution, n_dim)
+
+    return 1 - (log["cost"] / np.sqrt(n_dim + n_dim))
+
+
+def continuous_emd_FNI(gt_mask, attribution, n_dim=64):
+    if isinstance(gt_mask, torch.Tensor):
+        gt_mask = gt_mask.detach().cpu().numpy()
+    if isinstance(attribution, torch.Tensor):
+        attribution = attribution.detach().cpu().numpy()
+
+    cost_matrix = cost_matrix_64by64_FNI
+    if n_dim == 64:
+        cost_matrix = cost_matrix_8by8_FNI
+
+    if np.abs(attribution).sum() == 0:
+        return 0.0
 
     _, log = emd(
         sum_to_1(gt_mask.reshape(n_dim)).astype(np.float64),
